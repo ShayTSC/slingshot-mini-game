@@ -127,7 +127,7 @@ To access the full capabilities of our figma design (select elements, export ele
 
 1. Create a [Figma account](https://figma.com) or [login](https://figma.com) to your existing figma account
 2. Open the [Figma link](https://www.figma.com/file/OX9KUE33QGTyaSfpiBMsEN/%5BSlingshot%5D-Asteroids---Javascript-Development-Test)
-3. Enter the following password: SlingshotToAsteroids 
+3. Enter the following password: SlingshotToAsteroids
 
 
 
