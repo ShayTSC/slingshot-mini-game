@@ -5,6 +5,7 @@ import router from "./apis";
 import * as mongodb from "mongodb";
 import winston from "winston";
 import mongoSanitize from "express-mongo-sanitize";
+import EventLoop from "./events";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
@@ -27,6 +28,7 @@ const logger = winston.createLogger({
 
 const port = process.env.PORT;
 const app = express();
+const machine = new EventLoop();
 
 app.listen(port, () => {
   logger.info(`⚡️[server]: Server is running at https://localhost:${port}`);
@@ -45,6 +47,7 @@ const collections: {
   miners?: mongodb.Collection;
   planets?: mongodb.Collection;
   asteroids?: mongodb.Collection;
+  history?: mongodb.Collection;
 } = {};
 
 // Connect to the database
@@ -60,17 +63,21 @@ async function connectToDatabase() {
   const minerCollection: mongodb.Collection = db.collection("miners");
   const planetCollection: mongodb.Collection = db.collection("planets");
   const asteroidCollection: mongodb.Collection = db.collection("asteroids");
+  const historyCollection: mongodb.Collection = db.collection("history");
 
   collections.miners = minerCollection;
   collections.planets = planetCollection;
   collections.asteroids = asteroidCollection;
+  collections.history = historyCollection;
 
   logger.info({
     level: "info",
     message: `Connected to database: ${process.env.DB_NAME}`,
   });
+
+  machine.init();
 }
 
 connectToDatabase().then(r => logger.silly('connect to database complete'));
 
-export { app, collections };
+export { app, collections, logger, machine };

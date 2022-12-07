@@ -2,10 +2,21 @@
   {
     "id": 1,
     "minerId": 1,
-    "currentState": 0,
+    "state": 1,
     "targetState": 1,
-    "currPosition": {},
-    "targetPosition": {},
-    "createdAt": "2018-01-01T00:00:00.000Z"
+    "metadata": {
+      "currentPosition": {
+        "x": 232,
+        "y": 454
+      },
+      "targetPosition": {
+        "x": 454,
+        "y": 232
+      },
+      "sitename": "wakanda4ever"
+    },
+    "payload": 0,
+    "timespan": 0,
+    "timestamp": 1670438847824
   }
 ]

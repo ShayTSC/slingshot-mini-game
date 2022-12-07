@@ -5,3 +5,6 @@ export const illegalNumber = (value: number) =>
 
 export const illegalCoordinate = (coord: { x: number; y: number }) =>
   coord.x < 0 || coord.x > 2000 || coord.y < 0 || coord.y > 2000;
+
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));

@@ -1,4 +1,4 @@
-export interface IPlanets {
+export interface IPlanet {
   _id: any;
   id: number;
   name: string;

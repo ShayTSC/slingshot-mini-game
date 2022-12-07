@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.collections = exports.app = void 0;
+exports.machine = exports.logger = exports.collections = exports.app = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
@@ -43,6 +43,7 @@ const apis_1 = __importDefault(require("./apis"));
 const mongodb = __importStar(require("mongodb"));
 const winston_1 = __importDefault(require("winston"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
+const events_1 = __importDefault(require("./events"));
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv_1.default.config();
 // Create a logger
@@ -56,9 +57,12 @@ const logger = winston_1.default.createLogger({
         return `${timestamp} [${label}] ${level}: ${message}`;
     })),
 });
+exports.logger = logger;
 const port = process.env.PORT;
 const app = (0, express_1.default)();
 exports.app = app;
+const machine = new events_1.default();
+exports.machine = machine;
 app.listen(port, () => {
     logger.info(`⚡️[server]: Server is running at https://localhost:${port}`);
 });
@@ -80,13 +84,16 @@ function connectToDatabase() {
         const minerCollection = db.collection("miners");
         const planetCollection = db.collection("planets");
         const asteroidCollection = db.collection("asteroids");
+        const historyCollection = db.collection("history");
         collections.miners = minerCollection;
         collections.planets = planetCollection;
         collections.asteroids = asteroidCollection;
+        collections.history = historyCollection;
         logger.info({
             level: "info",
             message: `Connected to database: ${process.env.DB_NAME}`,
         });
+        machine.init();
     });
 }
 connectToDatabase().then(r => logger.silly('connect to database complete'));

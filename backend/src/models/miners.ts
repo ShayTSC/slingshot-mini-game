@@ -1,8 +1,8 @@
-export interface IMiners {
+export interface IMiner {
   _id: any;
   id: number;
   name: string;
-  planetid: number;
+  planetId: number;
   carryCapacity: number;
   travelSpeed: number;
   miningSpeed: number;

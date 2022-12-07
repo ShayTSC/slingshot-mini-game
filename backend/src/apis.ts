@@ -1,7 +1,7 @@
 import express from "express";
 import { collections } from "./main";
 import { IAsteroid } from "./models/asteroids";
-import { IPlanets } from "./models/planets";
+import { IPlanet } from "./models/planets";
 import { illegalCoordinate, illegalNumber } from "./uilts";
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.get("/miners", async (req, res) => {
         ?.find({
           planetId: { $in: planetIds },
         })
-        .toArray()) as IPlanets[] | undefined;
+        .toArray()) as IPlanet[] | undefined;
 
       if (miners?.length === 0) {
         res.status(404).send({
@@ -33,7 +33,7 @@ router.get("/miners", async (req, res) => {
       }
     } else {
       const miners = (await collections.miners?.find().toArray()) as
-        | IPlanets[]
+        | IPlanet[]
         | undefined;
       res.send(
         miners?.map((miner) => {
@@ -201,7 +201,7 @@ router.delete("/miners/:id", async (req, res) => {
 router.get("/planets", async (req, res) => {
   try {
     const planets = (await collections.planets?.find().toArray()) as
-      | IPlanets[]
+      | IPlanet[]
       | undefined;
     res.send(
       planets?.map((planet) => {
