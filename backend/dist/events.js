@@ -23,31 +23,20 @@ class EventLoop {
         this.machines = [];
     }
     travel(miner) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             let position = {
                 x: 0,
                 y: 0,
             };
-            // Find is there lefted task in the history (service suspend)
-            const history = yield ((_a = main_1.collections.history) === null || _a === void 0 ? void 0 : _a.find({
-                minerId: miner.id,
-            }).sort({ timstamp: -1 }).toArray());
-            // If there is, get the last recorded position
-            const lastState = history ? (_b = history === null || history === void 0 ? void 0 : history[0]) === null || _b === void 0 ? void 0 : _b.state : undefined;
-            if (lastState === 1) {
-                position = (_c = history === null || history === void 0 ? void 0 : history[0]) === null || _c === void 0 ? void 0 : _c.metadata.currentPosition;
-            }
-            else {
-                const planet = yield ((_d = main_1.collections.planets) === null || _d === void 0 ? void 0 : _d.findOne({
-                    id: miner.planetId,
-                }));
-                position = planet === null || planet === void 0 ? void 0 : planet.position;
-            }
+            const planet = yield ((_a = main_1.collections.planets) === null || _a === void 0 ? void 0 : _a.findOne({
+                id: miner.planetId,
+            }));
+            position = planet === null || planet === void 0 ? void 0 : planet.position;
             // List all asteroids with minerals amount > 0
             // Theretically this algo should calculated with both distance
             // And minerals amount, but for now we just use distance
-            const asteroids = yield ((_e = main_1.collections.asteroids) === null || _e === void 0 ? void 0 : _e.find({
+            const asteroids = yield ((_b = main_1.collections.asteroids) === null || _b === void 0 ? void 0 : _b.find({
                 minerals: {
                     $gt: 0,
                 },
@@ -64,7 +53,7 @@ class EventLoop {
                 }
                 const index = distances.findIndex((d) => d === Math.min(...distances));
                 const timespan = new bignumber_js_1.default(distances[index]).dividedBy(new bignumber_js_1.default(miner.travelSpeed).div(1000));
-                yield ((_f = main_1.collections.history) === null || _f === void 0 ? void 0 : _f.insertOne({
+                yield ((_c = main_1.collections.history) === null || _c === void 0 ? void 0 : _c.insertOne({
                     minerId: miner.id,
                     state: 1,
                     metadata: {

@@ -21,24 +21,10 @@ export default class EventLoop {
       y: 0,
     };
 
-    // Find is there lefted task in the history (service suspend)
-    const history = await collections.history
-      ?.find({
-        minerId: miner.id,
-      })
-      .sort({ timstamp: -1 })
-      .toArray();
-    // If there is, get the last recorded position
-    const lastState = history ? history?.[0]?.state : undefined;
-
-    if (lastState === 1) {
-      position = history?.[0]?.metadata.currentPosition;
-    } else {
-      const planet = await collections.planets?.findOne({
-        id: miner.planetId,
-      });
-      position = planet?.position;
-    }
+    const planet = await collections.planets?.findOne({
+      id: miner.planetId,
+    });
+    position = planet?.position;
 
     // List all asteroids with minerals amount > 0
     // Theretically this algo should calculated with both distance
