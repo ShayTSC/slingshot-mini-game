@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "name": "Alpha",
+    "planetId": 1,
+    "carryCapacity": 90,
+    "travelSpeed": 40,
+    "miningSpeed": 70
+  },
+  {
+    "id": 2,
+    "name": "Beta",
+    "planetId": 2,
+    "carryCapacity": 150,
+    "travelSpeed": 25,
+    "miningSpeed": 25
+  },
+  {
+    "id": 3,
+    "name": "Gamma",
+    "planetId": 3,
+    "carryCapacity": 120,
+    "travelSpeed": 40,
+    "miningSpeed": 40
+  },
+  {
+    "id": 4,
+    "name": "Delta",
+    "planetId": 1,
+    "carryCapacity": 95,
+    "travelSpeed": 95,
+    "miningSpeed": 10
+  },
+  {
+    "id": 5,
+    "name": "Epsilon",
+    "planetId": 2,
+    "carryCapacity": 70,
+    "travelSpeed": 70,
+    "miningSpeed": 60
+  },
+  {
+    "id": 6,
+    "name": "Zeta",
+    "planetId": 3,
+    "carryCapacity": 100,
+    "travelSpeed": 30,
+    "miningSpeed": 70
+  },
+  {
+    "id": 7,
+    "name": "Eta",
+    "planetId": 1,
+    "carryCapacity": 150,
+    "travelSpeed": 25,
+    "miningSpeed": 25
+  },
+  {
+    "id": 8,
+    "name": "Theta",
+    "planetId": 2,
+    "carryCapacity": 120,
+    "travelSpeed": 40,
+    "miningSpeed": 40
+  },
+  {
+    "id": 9,
+    "name": "Iota",
+    "planetId": 3,
+    "carryCapacity": 100,
+    "travelSpeed": 30,
+    "miningSpeed": 70
+  }
+]

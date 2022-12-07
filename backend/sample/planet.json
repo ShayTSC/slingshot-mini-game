@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Planet 1",
+    "position": { "x": 484, "y": 22 },
+    "minerals": 1000
+  },
+  {
+    "id": 2,
+    "name": "Planet 2",
+    "position": { "x": 867, "y": 277 },
+    "minerals": 1000
+  },
+  {
+    "id": 3,
+    "name": "Planet 3",
+    "position": { "x": 149, "y": 510 },
+    "minerals": 1000
+  }
+]

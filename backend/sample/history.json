@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "minerId": 1,
+    "currentState": 0,
+    "targetState": 1,
+    "currPosition": {},
+    "targetPosition": {},
+    "createdAt": "2018-01-01T00:00:00.000Z"
+  }
+]
