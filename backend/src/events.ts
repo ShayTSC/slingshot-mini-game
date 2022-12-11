@@ -6,6 +6,9 @@ import BigNumber from "bignumber.js";
 
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
 
+// Map stores asteroid_name => [miner_name] relations
+const AsteroidMinerMap: { [key: string]: number[] } = {};
+
 export default class EventLoop {
   miners: IMiner[];
   machines: any[];
@@ -90,6 +93,15 @@ export default class EventLoop {
       });
 
       if (asteroid) {
+        // Add the miner to the asteroid map
+        if (AsteroidMinerMap[asteroid.name]) {
+          AsteroidMinerMap[asteroid.name] = [
+            ...AsteroidMinerMap[asteroid.name],
+            miner.id,
+          ];
+        } else {
+          AsteroidMinerMap[asteroid.name] = [miner.id];
+        }
         const currentPayload =
           asteroid?.minerals >= miner.carryCapacity
             ? miner.carryCapacity
@@ -116,7 +128,6 @@ export default class EventLoop {
               $set: {
                 mined: asteroid?.mined + currentPayload,
                 status: asteroid?.mineral < asteroid?.mined + currentPayload,
-                miner: miner.id,
               },
             }
           );
@@ -144,7 +155,7 @@ export default class EventLoop {
             },
             {
               $set: {
-                miner: -1,
+                mined: asteroid.mined + currentPayload,
               },
             }
           );
@@ -156,8 +167,16 @@ export default class EventLoop {
               .div(1000)
               .toFixed(0)} years`
           );
+
           await sleep(Number(timespan));
         }
+        // Remove miner off the asteroid
+        AsteroidMinerMap[asteroid.name].splice(
+          AsteroidMinerMap[asteroid.name].indexOf(miner.id),
+          1
+        );
+
+        logger.warn(JSON.stringify(AsteroidMinerMap));
       }
     } catch (error) {
       logger.error(`mine error: ${error}`);
@@ -218,6 +237,7 @@ export default class EventLoop {
             planet.position.y
           }) for ${timespan.div(1000).toFixed(0)} years`
         );
+
         await sleep(Number(timespan));
       }
     } catch (error) {
@@ -231,7 +251,6 @@ export default class EventLoop {
       if (miners) {
         this.miners = [...(miners as IMiner[])];
         this.miners.map(async (miner) => {
-          logger.warn("miner", miner.id);
           // Recover miner state from history
           const history = await collections.history
             ?.find({
@@ -272,7 +291,7 @@ export default class EventLoop {
           const service = interpret(machine).start();
 
           service.subscribe((state) => {
-            logger.info(`miner: ${miner.id} => ${state.value}`);
+            // logger.info(`miner: ${miner.id} => ${state.value}`);
             switch (state.value) {
               case "Idle":
                 service.send("TRAVEL");
@@ -301,3 +320,5 @@ export default class EventLoop {
     }
   }
 }
+
+export { AsteroidMinerMap };

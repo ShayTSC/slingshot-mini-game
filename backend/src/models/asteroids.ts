@@ -3,7 +3,6 @@ export interface IAsteroid {
   name: string;
   minerals: number;
   mined: number;
-  currentMiner: number;
   position: {
     x: number;
     y: number;

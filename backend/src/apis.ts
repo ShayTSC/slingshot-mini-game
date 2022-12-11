@@ -1,4 +1,5 @@
 import express from "express";
+import { AsteroidMinerMap } from "./events";
 import { collections } from "./main";
 import { IAsteroid } from "./models/asteroids";
 import { IPlanet } from "./models/planets";
@@ -201,15 +202,29 @@ router.delete("/miners/:id", async (req, res) => {
 // Planets
 router.get("/planets", async (req, res) => {
   try {
-    const planets = (await collections.planets?.find().toArray()) as
-      | IPlanet[]
-      | undefined;
-    res.send(
-      planets?.map((planet) => {
-        delete planet._id;
-        return planet;
-      })
-    );
+    const planets = (await collections.planets
+      ?.aggregate([
+        {
+          $lookup: {
+            from: "miners",
+            localField: "id",
+            foreignField: "planetId",
+            as: "miners",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            id: 1,
+            position: 1,
+            minerals: 1,
+            minersCount: { $size: "$miners" },
+          },
+        },
+      ])
+      .toArray()) as IPlanet[] | undefined;
+
+    res.send(planets);
   } catch (error) {
     res.status(500).send({
       error: JSON.stringify(error),
@@ -361,34 +376,19 @@ router.delete("/planets/:id", async (req, res) => {
 // Asteroids
 router.get("/asteroids", async (req, res) => {
   try {
-    const asteroids = (await collections.asteroids
-      ?.aggregate([
-        {
-          $lookup: {
-            from: "miners",
-            localField: "miner",
-            foreignField: "id",
-            as: "miners_raw",
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            name: 1,
-            position: 1,
-            minerals: 1,
-            mined: 1,
-            currentMiner: 1,
-            miner: "$miners_raw.name",
-          },
-        },
-        {
-          $unwind: "$name",
-        },
-      ])
-      .toArray()) as IAsteroid[] | undefined;
+    const asteroids = (await collections.asteroids?.find().toArray()) as
+      | IAsteroid[]
+      | undefined;
 
-    res.send(asteroids);
+    res.send(
+      asteroids?.map((asteroid) => {
+        delete asteroid._id;
+        return {
+          miner: AsteroidMinerMap[asteroid.name] || [],
+          ...asteroid,
+        };
+      })
+    );
   } catch (error) {
     res.status(500).send({
       error: JSON.stringify(error),
@@ -410,7 +410,11 @@ router.get("/asteroids/:name", async (req, res) => {
     });
     if (asteroid) {
       const { _id, ...asteroidWithoutId } = asteroid;
-      res.send(asteroidWithoutId);
+
+      res.send({
+        ...asteroidWithoutId,
+        miner: AsteroidMinerMap[asteroid.name] || [],
+      });
     } else {
       res.status(404).send({
         error: "Asteroid not found",
