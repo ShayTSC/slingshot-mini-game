@@ -52,7 +52,7 @@ The method that driven the miners are easy. Miners will find the nearest planet 
 
 ### The state machine
 
-I choose a state machine to drive the miner, the library is called `xstate`. I spent quite some time to learn the library and the backend/database stuff. And it works pretty well. There's a bit mess in the code, I have to have a object to store the relationship between asteroid and miner location in the memory. This is also should be maintained alongs a bunch of other states in a dedicated cache server.
+I choose a third-party state machine to drive the miner, the library is called `xstate`. I spent quite some time to learn the library. And it works pretty well. There's a bit mess in the code, I have to have a object to store the relationship between asteroid and miner location in the memory. This is also should be maintained alongs a bunch of other states in a dedicated cache server.
 
 ### Websocket server
 
