@@ -40,7 +40,7 @@ Except the source files listed below, there's a `sample` and `scripts` folder fo
 
 ## Thoughts on implementation
 
-The game mechanism is relatively easy but there's there's many detail to be focused on. In my version of implementation. Here's some thoughts I'm thinking while I'm building this.
+The game mechanism is relatively easy but there are many detail to be focused on. In my version of implementation. Here's some thoughts I'm thinking while I'm building this.
 
 ### Data persistance
 
