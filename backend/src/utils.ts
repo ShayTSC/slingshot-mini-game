@@ -1,5 +1,3 @@
-import { Number } from "mongoose";
-
 export const illegalNumber = (value: number) =>
   isNaN(value) || value < 1 || value > 200;
 

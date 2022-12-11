@@ -1,7 +1,7 @@
 import { createMachine, interpret } from "xstate";
 import { collections, logger } from "./main";
 import { IMiner } from "./models/miners";
-import { sleep } from "./uilts";
+import { sleep } from "./utils";
 import BigNumber from "bignumber.js";
 
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
@@ -51,6 +51,8 @@ export default class EventLoop {
         const timespan = new BigNumber(distances[index]).dividedBy(
           new BigNumber(miner.travelSpeed).div(1000)
         );
+        await sleep(Number(timespan));
+
         await collections.history?.insertOne({
           minerId: miner.id,
           state: 1,
@@ -71,7 +73,6 @@ export default class EventLoop {
             asteroids[index].position.y
           }) for ${timespan.div(1000).toFixed(0)} years`
         );
-        await sleep(Number(timespan));
       }
     } catch (error) {
       logger.error(`travel error: ${error}`);
@@ -136,6 +137,7 @@ export default class EventLoop {
           const timespan = new BigNumber(asteroid?.minerals).dividedBy(
             new BigNumber(miner.miningSpeed).div(1000)
           );
+          await sleep(Number(timespan));
 
           // Insert the history and remove the miner off the asteroid
           collections.history?.insertOne({
@@ -167,8 +169,6 @@ export default class EventLoop {
               .div(1000)
               .toFixed(0)} years`
           );
-
-          await sleep(Number(timespan));
         }
         // Remove miner off the asteroid
         AsteroidMinerMap[asteroid.name].splice(

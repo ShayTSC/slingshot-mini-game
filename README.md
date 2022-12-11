@@ -1,135 +1,92 @@
-# Mediasia Backend test
+# BUILD LOG
 
-## Program description
+This file logs my idea on implementing the test.
 
-Build an asteroid mining simulation, using react, express, node and a websocket server.
+## APOLOGIZE
 
-The simulation starts with 3 planets, 20 asteroids and 9 miners.
+I apologize my terrible time management on this project, apparently I'll keep updating this project because it's fun to do. I was in hosipital in Saturday and have tons of works to do during the entire weekend and my current empoyer ask me to work `996` at minimum. It's not an excuse for delay but I just want to say sorry for the delaying endlessly on this test.
 
-Each miner is assigned to a specific planet. A miner is a spacecraft which can travel from its planet to an asteroid, and mine its minerals.
-Each miner has a mineral carry capacity, a travel speed and a mining speed. Miners start the simulation from their origin planet, will travel to an asteroid, mine minerals, and return back to their planet to drop the minerals.
+## Tech Stack
 
-A planet can store minerals. Each planet can spawn new miner when it has enough resources. It takes 1000 minerals to spawn a new miner, and the minerals are removed from the planet.
+I used the recommended tech stack, using `Node.js`, `Express.js`, `MongoDB` building this application. I'm more get used to TypeScript, so I'll build with `TypeScript` too.
 
-Each asteroid has a limited quantity of minerals, which decreases when it is mined by a miner, up to depletion. 
-An asteroid can be mined by only one miner at a time.
+For some cases data body inside RESTful services have standards. But here I will just transfer the required information I want, no standard applied.
 
-The simulation is based on an event loop, 1 second in real life equals 1 year in the simulation.
+## Database
 
-There is no final goal to reach. The goal is that the simulation works.
+The collections of database is basically identical to the example json output provided, except the minerals field I added in the planet collection.
 
-## Rules
+I setup the unique index to various key in the collection, like `id`s in the miners and planets collections, and `name` in the asteroids collection.
 
-#### Map
+## File Structure (Backend)
 
-- The map is a grid of 1000 * 1000. The position of the planets, asteroids and miners is contained within this grid.
-- A position on the map is a `int` ranging from `0` to `999`.
+Because this application is relatively simple, so there won't be a complicated structure.
 
+Except the source files listed below, there's a `sample` and `scripts` folder for storing data examples and scripts to reset database.
 
-#### Time
+```Text
+./backend/src
+├── apis.ts
+├── events.ts
+├── main.ts
+├── models
+│   ├── asteroids.ts
+│   ├── miners.ts
+│   └── planets.ts
+├── pubsub.ts
+├── utils.ts
+└── websocket.ts
+```
 
-- One second (1000ms) in real life is 1 year in the simulation
+## Thoughts on implementation
 
+The game mechanism is relatively easy but there's there's many detail to be focused on. In my version of implementation. Here's some thoughts I'm thinking while I'm building this.
 
-#### Planet
+### Data persistance
 
-- A planet can store an infinite number of mineral.
-- A planet has a position (`x`, `y`)
-- A planet can spawn a miner
-	- A planet can spawn a miner only when it has enough mineral (the cost to spawn a miner is `1000` minerals)
-	- A planet can spawn an unlimited amount of miners, as long as it has enough minerals
-	- When a miner is spawn, the amount of minerals (`1000` minerals) is substracted from the planet's total mineral storage (the mineral can never reach a negative number)
-	- Spawning a miner is done manually from the frontend (see design)
+The status of the operation will be not saved first while a miner entering a new stage, so that when the server reboots accidentally, it will continues the current task. This could be problem for `mining` stage, because there should be a LOCK mechanism in third-party cache server like Redis, so that the states will survive the server down time. But in here I just didn't implement it. I'll just assume that the server will works fine. (Limit of time, sorry)
 
+### Miners working logic
 
-#### Miner
+The method that driven the miners are easy. Miners will find the nearest planet that the resource is above 0, and miner as much as it can, then head back to the mother planet. There are optimizations to be done for sure, for example the picking of the asteroids should be also considering the travel time and capacity to maximize the mining volume per hour. There should be a formula for the best solution.
 
-- A miner has 3 main characteristics:
-	- `carryCapacity` (`int` from `1` to `200`), this is the maximum number of minerals a miner can carry at one time
-	- `travelSpeed` (`int` from `1` to `200`), this is the travel speed per year of a miner when moving on the map
-	- `miningSpeed` (`int` from `1` to `200`), this is the number of minerals a miner can mine per year
-- A miner has a position (`x`, `y`)
-- A miner belongs to a planet and can only transfer minerals to the planet is belongs to
-- A miner can travel:
-	- from its origin planet to an asteroids
-    - from an asteroid back to its origin planet
-- A miner can mine an asteroid:
-	- The miner needs to be at the same position as the asteroid to be able to mine it
-    - The miner can mine a maximum of `miningSpeed` minerals per year (ie. if mining speed is 30, the miner will mine 30 minerals per year)
-- At the start of the simulation all miners are positionned at their original planet
-- A miner has a status:
-	- `0` (`int`): Idle
-	- `1` (`int`): Traveling
-	- `2` (`int`): Mining
-	- `3` (`int`): Transfering minerals to planet
-- Each time a miner does an action, its action should be recorded in database, in a `history` table
-- Miner actions / history are:
-    - Miner spawn on planet `[planet name]`
-	- Traveling from planet `[planet name]` to asteroid `[asteroid name]`
-	- Mining asteroid `[asteroid name]` for `[number of years]` years
-	- Traveling back from asteroid `[asteroid name]` to `[planet name]`
-	- Transfering minerals to planet `[planet name]`
-	- ... and others if you think they make sense
+### The state machine
 
+I choose a state machine to drive the miner, the library is called `xstate`. I spent quite some time to learn the library and the backend/database stuff. And it works pretty well. There's a bit mess in the code, I have to have a object to store the relationship between asteroid and miner location in the memory. This is also should be maintained alongs a bunch of other states in a dedicated cache server.
 
-#### Asteroid
+### Websocket server
 
-- An asteroid has a position (`x`, `y`)
-- An asteroid has a status (`1`: `has minerals`, `0`: `depleted`) - default to `1`
-- An asteroid has an amount of minerals (it starts with a random amount from `800` to `1200`)
-- When a miner mines an asteroid, the amount of mined minerals is substracted from the amount stored in the asteroid
-- When an asteroid has no minerals anymore, its status changes from `1` to `0`
+Originally I put a lot of thoughts into the design of a subscription based websocket server, but I realized I might overthink too much.
 
+This websocket server here is a broadcast server, the purpose of it is to update data of the three tables in real time. So there's not much needs to manage the relations of the connected clients.
 
-#### Mineral
+So instead of using the standard jsonprc request I'll make a custom body to just specify to table to update, the the data and the operation with the payload. The message body looks some thing like this, alongs with the message body, also there's a enum for types of message.
 
-- An amount of mineral is always an `unsigned int`
+```TypeScript
+enum Actions {
+	ADD="add",
+	UPDATE="update",
+	DELETE="delete",
+}
 
+interface MessageBody {
+	action: Actions;
+	asteroid?: IAsteroid;
+	miner?: IMiner;
+	planet?: IPlanet;
+}
+```
 
+To achieve that I need a reflect mechanism to emit trigger from REST apis and running state machine. Rxjs seems like the right way to do the work. I will use the observable object to implement a minimal `pubsub` module to hooks the event actions, RESTApi actions and websocket.
 
+## Progress
 
-## Structure
+- The events module is basically finished, needs more testing and debug.
 
-The deliverable is a backend built using node.js, express.js and MongoDB (and other npm packages if needed), and a frontend built using React.
+- The restful module is partially finished, I did the very basic response from the database, but will need to aggregate more data to meet the business needs.
 
-The frontend shoud interact with the backend in 2 ways:
+- The websocket module is heavily related to the pubsub module, which has not been insert into the event flow.
 
-- Websocket:
-	- All planet, miners and asteroids status and information displayed on the frontend should be updated live via a websocket connection to the backend
-	- Each time a miner, planet, asteroid is created or modified on the backend, it should be updated live on the frontend
-- REST API:
-	- All data should be accessible via a REST API structure:
-		- GET `/miners`: return the list of miners
-		- GET `/miners?planetId=[planet ID]`: return the list of miners from a given planet ID
-		- GET `/miners/[miner ID]`: return a miner based on its ID
-		- POST `/miners`: create a miner
-		- PUT `/miners/[miner ID]`: update a miner based on its ID
-		- DELETE `/miners/[miner ID]`: delete a miner based on its ID
-	- Same instruction for planets and asteroids
+- The front-end has not been modified yet, I'll finish the tweaking of the RESTful APIs and websockets then start working on the frontend.
 
-
-## Frontend
-
-The frontend is simple in terms of design. What we are paying attention to is the API and Websocket integration.
-
-## Resources
-
-- Design : See figma access below
-- Sample data:
-	- http://miner.dev.mediasia.cn/planets
-	- http://miner.dev.mediasia.cn/miners
-	- http://miner.dev.mediasia.cn/asteroids
-- Frontend base : provided within that repository
-
-### Access figma file
-
-To access the full capabilities of our figma design (select elements, export elements, view font size, view css properties, etc) your need to be logged in to a figma account.
-
-1. Create a [Figma account](https://figma.com) or [login](https://figma.com) to your existing figma account
-2. Open the [Figma link](https://www.figma.com/file/OX9KUE33QGTyaSfpiBMsEN/%5BSlingshot%5D-Asteroids---Javascript-Development-Test)
-3. Enter the following password: SlingshotToAsteroids
-
-
-
-![List of miners](/images/miners.png)
-
+## [WIP]

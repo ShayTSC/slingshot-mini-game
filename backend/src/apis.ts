@@ -3,7 +3,7 @@ import { AsteroidMinerMap } from "./events";
 import { collections } from "./main";
 import { IAsteroid } from "./models/asteroids";
 import { IPlanet } from "./models/planets";
-import { illegalCoordinate, illegalNumber } from "./uilts";
+import { illegalCoordinate, illegalNumber } from "./utils";
 
 const router = express.Router();
 
