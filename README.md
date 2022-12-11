@@ -8,15 +8,15 @@ I apologize my terrible time management on this project, apparently I'll keep up
 
 ## Tech Stack
 
-I used the recommended tech stack, using `Node.js`, `Express.js`, `MongoDB` building this application. I'm more get used to TypeScript, so I'll build with `TypeScript` too.
+I used the recommended tech stack, using `Node.js`, `Express.js`, `MongoDB` to building this application. I'm more get used to TypeScript, so I'll build with `TypeScript` too.
 
-For some cases data body inside RESTful services have standards. But here I will just transfer the required information I want, no standard applied.
+In some cases the data body inside RESTful services have standards, for example to have wrappers to transfer data bitween services. But in this implementation I will just transfer the required information I want, with no standard applied.
 
 ## Database
 
-The collections of database is basically identical to the example json output provided, except the minerals field I added in the planet collection.
+The definition of collections are basically identical to the example json output provided, except the minerals field I added in the planet collection.
 
-I setup the unique index to various key in the collection, like `id`s in the miners and planets collections, and `name` in the asteroids collection.
+I setup the unique index to various columns in the collection, like `id`s in the miners and planets collections, and `name` in the asteroids collection.
 
 ## File Structure (Backend)
 
