@@ -48,7 +48,7 @@ The status of the operation will be not saved first while a miner entering a new
 
 ### Miners working logic
 
-The method that driven the miners are easy. Miners will find the nearest planet that the resource is above 0, and miner as much as it can, then head back to the mother planet. There are optimizations to be done for sure, for example the picking of the asteroids should be also considering the travel time and capacity to maximize the mining volume per hour. There should be a formula for the best solution.
+The method that driven the miners are easy. Miners will find the nearest planet that the resource is above 0, and mine as much as it can, then head back to the mother planet. There are optimizations to be done for sure, for example the picking of the asteroids should be also considering the travel time and capacity to maximize the mining volume per hour. There should be a formula for the best solution.
 
 ### The state machine
 
