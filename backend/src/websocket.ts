@@ -1,17 +1,24 @@
 import { Server } from "ws";
+import { MessageBody, subject } from "./pubsub";
 
 const wss = new Server({ host: "localhost", port: 8081 });
-
-const subscriptions = {
-  miners: [],
-  planets: [],
-  asteroids: [],
-};
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
 
-  ws.on("message", (message) => {});
+  subject.subscribe((msg: MessageBody) => {
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(msg));
+      }
+    });
+  });
+
+  ws.on("message", (message) => {
+    if (message.toString() == "ping") {
+      ws.send("pong");
+    }
+  });
 
   ws.on("close", () => {
     console.log("Client disconnected");

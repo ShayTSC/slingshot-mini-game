@@ -14,15 +14,12 @@ dotenv.config();
 const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
-      level: "silly",
+      level: process.env.LOG_LEVEL || "info",
     }),
   ],
   format: winston.format.combine(
-    winston.format.label({ label: "Slingshot" }),
-    winston.format.timestamp(),
-    winston.format.printf(({ level, message, label, timestamp }) => {
-      return `${timestamp} [${label}] ${level}: ${message}`;
-    })
+    winston.format.colorize(),
+    winston.format.simple()
   ),
 });
 
@@ -38,8 +35,8 @@ app.use(bodyParser.json());
 app.use("/", router);
 app.use(
   mongoSanitize({
-    replaceWith: '_',
-  }),
+    replaceWith: "_",
+  })
 );
 
 // An object for collections to mount on
@@ -63,7 +60,7 @@ async function connectToDatabase() {
   const minerCollection: mongodb.Collection = db.collection("miners");
   const planetCollection: mongodb.Collection = db.collection("planets");
   const asteroidCollection: mongodb.Collection = db.collection("asteroids");
-  const historyCollection: mongodb.Collection = db.collection("history");
+  const historyCollection: mongodb.Collection = db.collection("histories");
 
   collections.miners = minerCollection;
   collections.planets = planetCollection;
@@ -78,6 +75,6 @@ async function connectToDatabase() {
   machine.init();
 }
 
-connectToDatabase().then(r => logger.silly('connect to database complete'));
+connectToDatabase().then((r) => logger.silly("connect to database complete"));
 
 export { app, collections, logger, machine };

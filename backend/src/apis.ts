@@ -81,6 +81,7 @@ router.post("/miners", async (req, res) => {
     console.log(req.body);
     if (
       planet &&
+      planet.minerals > 500 &&
       !!req.body.name &&
       !illegalNumber(req.body.carryCapacity) &&
       !illegalNumber(req.body.travelSpeed) &&
@@ -360,15 +361,34 @@ router.delete("/planets/:id", async (req, res) => {
 // Asteroids
 router.get("/asteroids", async (req, res) => {
   try {
-    const asteroids = (await collections.asteroids?.find().toArray()) as
-      | IAsteroid[]
-      | undefined;
-    res.send(
-      asteroids?.map((asteroid) => {
-        delete asteroid._id;
-        return asteroid;
-      })
-    );
+    const asteroids = (await collections.asteroids
+      ?.aggregate([
+        {
+          $lookup: {
+            from: "miners",
+            localField: "miner",
+            foreignField: "id",
+            as: "miners_raw",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            name: 1,
+            position: 1,
+            minerals: 1,
+            mined: 1,
+            currentMiner: 1,
+            miner: "$miners_raw.name",
+          },
+        },
+        {
+          $unwind: "$name",
+        },
+      ])
+      .toArray()) as IAsteroid[] | undefined;
+
+    res.send(asteroids);
   } catch (error) {
     res.status(500).send({
       error: JSON.stringify(error),
