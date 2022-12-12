@@ -35,5 +35,5 @@ async function main() {
 }
 
 main().then(() => {
-  console.log("Done");
+  console.log("DB Flushed");
 }, console.error);

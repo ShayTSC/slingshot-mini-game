@@ -114,7 +114,7 @@ export default class EventLoop {
             state: 2,
             metadata: {
               name: asteroid?.name,
-              position: asteroid?.position,
+              targetPosition: asteroid?.position,
             },
             payload: 0,
             timestamp: Date.now(),
@@ -177,7 +177,7 @@ export default class EventLoop {
           1
         );
 
-        logger.warn(JSON.stringify(AsteroidMinerMap));
+        logger.silly(JSON.stringify(AsteroidMinerMap));
       }
     } catch (error) {
       logger.error(`mine error: ${error}`);
