@@ -114,6 +114,7 @@ export default class EventLoop {
             state: 2,
             metadata: {
               name: asteroid?.name,
+              position: asteroid?.position,
             },
             payload: 0,
             timestamp: Date.now(),
@@ -199,13 +200,13 @@ export default class EventLoop {
         id: miner.planetId,
       });
 
-      if (planet) {
+      if (planet && history) {
         const timespan = new BigNumber(planet.position.x)
-          .minus(history?.[0].metadata.position.x)
+          .minus(history[0].metadata.targetPosition.x)
           .pow(2)
           .plus(
             new BigNumber(planet.position.y)
-              .minus(history?.[0].metadata.position.y)
+              .minus(history[0].metadata.targetPosition.y)
               .pow(2)
           )
           .sqrt()
@@ -214,9 +215,9 @@ export default class EventLoop {
           minerId: miner.id,
           state: 3,
           metadata: {
-            name: history?.[0].metadata.name,
+            name: history[0].metadata.name,
           },
-          payload: history?.[0]?.payload,
+          payload: history[0]?.payload,
           timestamp: Date.now(),
           timespan: timespan.toFixed(0),
         });
@@ -226,13 +227,13 @@ export default class EventLoop {
           },
           {
             $set: {
-              minerals: planet.minerals + history?.[0]?.payload,
+              minerals: planet.minerals + history[0]?.payload,
             },
           }
         );
         logger.debug(
           `Miner ${miner.id} is transferring ${
-            history?.[0]?.payload
+            history[0]?.payload
           } minerals to planet ${planet.name} at (${planet.position.x},${
             planet.position.y
           }) for ${timespan.div(1000).toFixed(0)} years`

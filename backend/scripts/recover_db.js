@@ -13,9 +13,7 @@ const miner = require("../sample/miners.json");
 const planets = require("../sample/planets.json");
 
 async function main() {
-  const client = await MongoClient.connect(url, {
-    useUnifiedTopology: true,
-  });
+  const client = await MongoClient.connect(url);
 
   const db = client.db(dbName);
 
@@ -33,7 +31,7 @@ async function main() {
   await minerCollection.insertMany(miner);
   await planetsCollection.insertMany(planets);
 
-  client.close();
+  await client.close();
 }
 
 main().then(() => {
