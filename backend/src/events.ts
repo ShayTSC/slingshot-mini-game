@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js";
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
 
 // Map stores asteroid_name => [miner_name] relations
-const AsteroidMinerMap: { [key: string]: number[] } = {};
+const AsteroidMinerMap: { [key: string]: number } = {};
 
 export default class EventLoop {
   miners: IMiner[];
