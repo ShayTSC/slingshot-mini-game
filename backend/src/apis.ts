@@ -235,12 +235,35 @@ router.get("/planets", async (req, res) => {
 
 router.get("/planets/:id", async (req, res) => {
   try {
-    const planet = await collections.planets?.findOne({
-      id: parseInt(req.params.id),
-    });
-    if (planet) {
-      const { _id, ...planetWithoutId } = planet;
-      res.send(planetWithoutId);
+    const planetArr = await collections.planets
+      ?.aggregate([
+        {
+          $match: {
+            id: parseInt(req.params.id),
+          },
+        },
+        {
+          $lookup: {
+            from: "miners",
+            localField: "id",
+            foreignField: "planetId",
+            as: "miners",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            id: 1,
+            position: 1,
+            minerals: 1,
+            minersCount: { $size: "$miners" },
+          },
+        },
+      ])
+      .toArray();
+
+    if (planetArr && planetArr.length > 0) {
+      res.send(planetArr[0]);
     }
   } catch (error) {
     res.status(500).send({

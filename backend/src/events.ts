@@ -146,7 +146,7 @@ export default class EventLoop {
             state: 2,
             metadata: {
               name: asteroid?.name,
-              position: asteroid?.position,
+              targetPosition: asteroid?.position,
             },
             payload: currentPayload,
             timestamp: Date.now(),
