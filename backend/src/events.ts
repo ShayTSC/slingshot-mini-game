@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js";
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
 
 // Map stores asteroid_name => [miner_name] relations
-const AsteroidMinerMap: { [key: string]: number } = {};
+const AsteroidMinerMap: { [key: string]: number | null } = {};
 
 export default class EventLoop {
   miners: IMiner[];
@@ -47,6 +47,17 @@ export default class EventLoop {
           distances.push(Number(distance.toFixed(0)));
         }
         const index = distances.findIndex((d) => d === Math.min(...distances));
+
+        // Find the nearest asteroid, pre-allocate the miner to the asteroid
+        let cursor = 0;
+        while (AsteroidMinerMap[asteroids[cursor].name]) {
+          if (cursor !== distances.length - 1) {
+            cursor++;
+          } else {
+            cursor = 0;
+          }
+        }
+        AsteroidMinerMap[asteroids[cursor].name] = miner.id;
 
         const timespan = new BigNumber(distances[index]).dividedBy(
           new BigNumber(miner.travelSpeed).div(1000)
@@ -94,15 +105,6 @@ export default class EventLoop {
       });
 
       if (asteroid) {
-        // Add the miner to the asteroid map
-        if (AsteroidMinerMap[asteroid.name]) {
-          AsteroidMinerMap[asteroid.name] = [
-            ...AsteroidMinerMap[asteroid.name],
-            miner.id,
-          ];
-        } else {
-          AsteroidMinerMap[asteroid.name] = [miner.id];
-        }
         const currentPayload =
           asteroid?.minerals >= miner.carryCapacity
             ? miner.carryCapacity
@@ -172,10 +174,7 @@ export default class EventLoop {
           );
         }
         // Remove miner off the asteroid
-        AsteroidMinerMap[asteroid.name].splice(
-          AsteroidMinerMap[asteroid.name].indexOf(miner.id),
-          1
-        );
+        AsteroidMinerMap[asteroid.name] = null;
 
         logger.silly(JSON.stringify(AsteroidMinerMap));
       }

@@ -6,6 +6,7 @@ import * as mongodb from "mongodb";
 import winston from "winston";
 import mongoSanitize from "express-mongo-sanitize";
 import EventLoop from "./events";
+import cors from 'cors';
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
@@ -28,10 +29,11 @@ const app = express();
 const machine = new EventLoop();
 
 app.listen(port, () => {
-  logger.info(`⚡️[server]: Server is running at https://localhost:${port}`);
+  logger.info(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use("/", router);
 app.use(
   mongoSanitize({
