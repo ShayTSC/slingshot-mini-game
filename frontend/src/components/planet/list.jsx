@@ -15,6 +15,7 @@ function PlanetList() {
     formVisible: false,
     loading: false,
   });
+  const [planets, setPlanets] = useState([]);
 
   // Show planet popup
   const showPopup = function () {
@@ -56,7 +57,7 @@ function PlanetList() {
 
   useEffect(() => {
     apis.fetchPlanet().then((planets) => {
-      console.log(planets);
+      setPlanets(planets);
     });
   }, []);
 
@@ -74,6 +75,21 @@ function PlanetList() {
         </thead>
 
         <tbody>
+          {planets.map((planet) => {
+            return (
+              <tr onClick={showPopup}>
+                <td>{planet.name}</td>
+                <td>{planet.miners}</td>
+                <td>{planet.minerals}</td>
+                <td>{`(${planet.position.x},${planet.position.y})`}</td>
+                <td>
+                  <div className="icon-addminer" onClick={showForm}>
+                    Create a miner
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
           <tr onClick={showPopup}>
             <td>Planet 1</td>
             <td>3</td>

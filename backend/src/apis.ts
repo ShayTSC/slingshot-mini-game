@@ -1,6 +1,5 @@
 import express from "express";
-import { AsteroidMinerMap } from "./events";
-import { collections } from "./main";
+import { client, collections } from "./main";
 import { IAsteroid } from "./models/asteroids";
 import { IPlanet } from "./models/planets";
 import { illegalCoordinate, illegalNumber } from "./utils";
@@ -404,13 +403,15 @@ router.get("/asteroids", async (req, res) => {
       | undefined;
 
     res.send(
-      asteroids?.map((asteroid) => {
-        delete asteroid._id;
-        return {
-          miner: AsteroidMinerMap[asteroid.name] || [],
-          ...asteroid,
-        };
-      })
+      await Promise.all(
+        asteroids?.map(async (asteroid) => {
+          delete asteroid._id;
+          return {
+            miner: await client.hGet("asteroid-miner", asteroid.name),
+            ...asteroid,
+          };
+        }) || []
+      )
     );
   } catch (error) {
     res.status(500).send({
@@ -436,7 +437,7 @@ router.get("/asteroids/:name", async (req, res) => {
 
       res.send({
         ...asteroidWithoutId,
-        miner: AsteroidMinerMap[asteroid.name] || [],
+        miner: await client.hGet("asteroid-miner", asteroid.name),
       });
     } else {
       res.status(404).send({

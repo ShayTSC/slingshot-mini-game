@@ -6,7 +6,8 @@ import * as mongodb from "mongodb";
 import winston from "winston";
 import mongoSanitize from "express-mongo-sanitize";
 import EventLoop from "./events";
-import cors from 'cors';
+import cors from "cors";
+import { createClient } from "redis";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
