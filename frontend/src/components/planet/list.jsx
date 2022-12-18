@@ -16,34 +16,31 @@ function PlanetList() {
     loading: false,
   });
   const [planets, setPlanets] = useState([]);
+  const [selectedPlanetId, setSelectedPlanetId] = useState(0);
 
   // Show planet popup
-  const showPopup = function () {
-    // If there is a timeout in progress, cancel it
-    if (state.loaderTimeout) clearTimeout(state.loaderTimeout);
+  const showPopup = function (id) {
+    setSelectedPlanetId(id);
 
     setState({
+      ...state,
       popupVisible: true,
-      loading: true,
-      loaderTimeout: setTimeout(() => {
-        setState({
-          loading: false,
-        });
-      }, 2000),
     });
   };
 
   // Hide planet popup
   const hidePopup = function () {
     setState({
+      ...state,
       popupVisible: false,
     });
   };
 
   // Show create miner form popup
-  const showForm = function (e) {
+  const showForm = function (e, id) {
     e.stopPropagation();
     setState({
+      ...state,
       formVisible: true,
     });
   };
@@ -51,13 +48,14 @@ function PlanetList() {
   // Hide create miner form popup
   const hideForm = function () {
     setState({
+      ...state,
       formVisible: false,
     });
   };
 
   useEffect(() => {
     apis.fetchPlanet().then((planets) => {
-      setPlanets(planets);
+      setPlanets(planets.data);
     });
   }, []);
 
@@ -75,73 +73,51 @@ function PlanetList() {
         </thead>
 
         <tbody>
-          {planets.map((planet) => {
+          {planets?.map((planet, i) => {
             return (
-              <tr onClick={showPopup}>
-                <td>{planet.name}</td>
-                <td>{planet.miners}</td>
-                <td>{planet.minerals}</td>
+              <tr onClick={() => showPopup(planet.id)} key={i}>
+                <td>Planet {planet.id}</td>
+                <td>{planet.minersCount}</td>
+                <td className={planet.minerals > 1000 ? "green" : ""}>
+                  {planet.minerals}/1000
+                </td>
                 <td>{`(${planet.position.x},${planet.position.y})`}</td>
                 <td>
-                  <div className="icon-addminer" onClick={showForm}>
+                  <div
+                    className="icon-addminer"
+                    onClick={(e) => showForm(e, planet.id)}
+                  >
                     Create a miner
                   </div>
                 </td>
               </tr>
             );
           })}
-          <tr onClick={showPopup}>
-            <td>Planet 1</td>
-            <td>3</td>
-            <td>560/1000</td>
-            <td>832, 635</td>
-            <td></td>
-          </tr>
-
-          <tr onClick={showPopup}>
-            <td>Planet 2</td>
-            <td>3</td>
-            <td className="green">1080/1000</td>
-            <td>658, 136</td>
-            <td>
-              <div className="icon-addminer" onClick={showForm}>
-                Create a miner
-              </div>
-            </td>
-          </tr>
-
-          <tr onClick={showPopup}>
-            <td>Planet 3</td>
-            <td>4</td>
-            <td className="green">2650/1000</td>
-            <td>168, 695</td>
-            <td>
-              <div className="icon-addminer" onClick={showForm}>
-                Create a miner
-              </div>
-            </td>
-          </tr>
         </tbody>
       </table>
 
       <Rodal
         visible={state.popupVisible}
         onClose={hidePopup}
-        width="550"
-        height="480"
+        width={550}
+        height={480}
       >
-        <h2>List of miners of Planet 1</h2>
-        {state.loading ? <Loader /> : <PopupContent />}
+        <h2>List of miners of Planet {selectedPlanetId}</h2>
+        {state.loading ? (
+          <Loader />
+        ) : (
+          <PopupContent planetId={selectedPlanetId} />
+        )}
       </Rodal>
 
       <Rodal
         visible={state.formVisible}
         onClose={hideForm}
-        width="440"
-        height="480"
+        width={440}
+        height={480}
       >
         <h2>Create a miner</h2>
-        <CreateMinerForm />
+        <CreateMinerForm planetId={selectedPlanetId} />
       </Rodal>
     </div>
   );

@@ -6,8 +6,8 @@ import { sleep } from "./utils";
 
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
 
-const AsteroidMinerMap = new Map<string, number>();
-const MinerAsteroidMap = new Map<number, string>();
+export const AsteroidMinerMap = new Map<string, number>();
+export const MinerAsteroidMap = new Map<number, string>();
 
 export default class EventLoop {
   miners: IMiner[];
@@ -78,7 +78,7 @@ export default class EventLoop {
           minerId: miner.id,
           state: 1,
           metadata: {
-            currentPosition: planet.position,
+            position: planet.position,
             targetPosition: asteroids[index].position,
             name: asteroids[index].name,
           },
@@ -123,7 +123,7 @@ export default class EventLoop {
             state: 2,
             metadata: {
               name: asteroid?.name,
-              targetPosition: asteroid?.position,
+              position: asteroid?.position,
             },
             payload: 0,
             timestamp: Date.now(),
@@ -222,6 +222,8 @@ export default class EventLoop {
           state: 3,
           metadata: {
             name: history[0].metadata.name,
+            position: history[0].metadata.position,
+            targetPosition: planet.position,
           },
           payload: history[0]?.payload,
           timestamp: Date.now(),
@@ -252,6 +254,62 @@ export default class EventLoop {
     }
   }
 
+  async runMachine(miner: IMiner, state?: string) {
+    logger.info(`Run state machine for miner ${miner.id}`);
+    const machine = createMachine({
+      predictableActionArguments: true,
+      id: miner.id.toString(),
+      initial: state || "Idle",
+      states: {
+        Idle: {
+          on: {
+            TRAVEL: "Traveling",
+          },
+        },
+        Traveling: {
+          on: {
+            MINE: "Mining",
+          },
+        },
+        Mining: {
+          on: {
+            TRANSFER: "Transferring",
+          },
+        },
+        Transferring: {
+          on: {
+            IDLE: "Idle",
+          },
+        },
+      },
+    });
+
+    const service = interpret(machine).start();
+
+    service.subscribe((state) => {
+      switch (state.value) {
+        case "Idle":
+          service.send("TRAVEL");
+          break;
+        case "Traveling":
+          this.travel(miner).then(() => {
+            service.send("MINE");
+          });
+          break;
+        case "Mining":
+          this.mine(miner).then(() => {
+            service.send("TRANSFER");
+          });
+          break;
+        case "Transferring":
+          this.transfer(miner).then(() => {
+            service.send("IDLE");
+          });
+          break;
+      }
+    });
+  }
+
   async init() {
     try {
       const miners = await collections.miners?.find().toArray();
@@ -267,59 +325,7 @@ export default class EventLoop {
             .toArray()
             .then((history) => {
               const lastState = history ? history?.[0]?.state : undefined;
-
-              const machine = createMachine({
-                predictableActionArguments: true,
-                id: miner.id.toString(),
-                initial: MinerStateMap[lastState] || "Idle",
-                states: {
-                  Idle: {
-                    on: {
-                      TRAVEL: "Traveling",
-                    },
-                  },
-                  Traveling: {
-                    on: {
-                      MINE: "Mining",
-                    },
-                  },
-                  Mining: {
-                    on: {
-                      TRANSFER: "Transferring",
-                    },
-                  },
-                  Transferring: {
-                    on: {
-                      IDLE: "Idle",
-                    },
-                  },
-                },
-              });
-
-              const service = interpret(machine).start();
-
-              service.subscribe((state) => {
-                switch (state.value) {
-                  case "Idle":
-                    service.send("TRAVEL");
-                    break;
-                  case "Traveling":
-                    this.travel(miner).then(() => {
-                      service.send("MINE");
-                    });
-                    break;
-                  case "Mining":
-                    this.mine(miner).then(() => {
-                      service.send("TRANSFER");
-                    });
-                    break;
-                  case "Transferring":
-                    this.transfer(miner).then(() => {
-                      service.send("IDLE");
-                    });
-                    break;
-                }
-              });
+              this.runMachine(miner, lastState);
             });
         });
       }

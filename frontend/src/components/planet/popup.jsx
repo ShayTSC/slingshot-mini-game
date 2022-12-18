@@ -2,58 +2,67 @@
  * Planet popup
  */
 
-import React from 'react'
+import React, { useEffect } from "react";
+import { apis } from "../../apis";
 
-class PlanetPopup extends React.Component {
-	constructor(props) {
-		super(props)
-	}
+export default function PlanetPopup(props) {
+  const [miners, setMiners] = React.useState([]);
 
-	render() {
-		return <div className="scrollable">
-			<table>
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Carry capacity</th>
-						<th>Travel speed</th>
-						<th>Mining speed</th>
-						<th>Position (x, y)</th>
-						<th>Status</th>
-					</tr>
-				</thead>
+  useEffect(() => {
+    if (props.planetId !== 0) {
+      apis.fetchMinerByPlanetId([props.planetId]).then((miners) => {
+        if (miners.data) setMiners(miners.data);
+      });
+    }
+  }, [props]);
 
-				<tbody>
-					<tr>
-						<td>Miner 1</td>
-						<td>0/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>832, 635</td>
-						<td>Mining</td>
-					</tr>
+  return (
+    <div className="scrollable">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Carry capacity</th>
+            <th>Travel speed</th>
+            <th>Mining speed</th>
+            <th>Position (x, y)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
 
-					<tr>
-						<td>Miner 2</td>
-						<td>16/120</td>
-						<td>200</td>
-						<td>45</td>
-						<td>32, 205</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr>
-						<td>Miner 3</td>
-						<td className="green">120/120</td>
-						<td>87</td>
-						<td>166</td>
-						<td>333, 123</td>
-						<td>Transferring</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-	}
+        <tbody>
+          {miners &&
+            miners.map((miner, i) => {
+              return (
+                <tr key={i}>
+                  <td>{miner.name}</td>
+                  <td
+                    className={
+                      Number(miner.history.payload) ===
+                      Number(miner.carryCapacity)
+                        ? "green"
+                        : ""
+                    }
+                  >
+                    {miner.history.payload}/{miner.carryCapacity}
+                  </td>
+                  <td>{miner.travelSpeed}</td>
+                  <td>{miner.miningSpeed}</td>
+                  <td>
+                    ({miner.history.metadata.position?.x || 0},
+                    {miner.history.metadata.position?.y || 0})
+                  </td>
+                  <td>
+                    {miner.history.state === 0 && <span>Idel</span>}
+                    {miner.history.state === 1 && <span>Traveling</span>}
+                    {miner.history.state === 2 && <span>Mining</span>}
+                    {miner.history.state === 3 && <span>Transferring</span>}
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
-
-export default PlanetPopup

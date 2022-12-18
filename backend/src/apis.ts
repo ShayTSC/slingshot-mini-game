@@ -1,8 +1,11 @@
 import express from "express";
-import { client, collections } from "./main";
+import { AsteroidMinerMap } from "./events";
+import { collections, logger } from "./main";
 import { IAsteroid } from "./models/asteroids";
 import { IPlanet } from "./models/planets";
 import { illegalCoordinate, illegalNumber } from "./utils";
+import { machine } from "./main";
+import { IMiner } from "./models/miners";
 
 const router = express.Router();
 
@@ -14,14 +17,64 @@ router.get("/miners", async (req, res) => {
         (item: unknown) => typeof item === "number"
       );
       const miners = (await collections.miners
-        ?.find({
-          planetId: { $in: planetIds },
-        })
+        ?.aggregate([
+          {
+            $match: { planetId: { $in: planetIds } },
+          },
+          {
+            $lookup: {
+              from: "histories",
+              localField: "id",
+              foreignField: "minerId",
+              as: "history",
+              pipeline: [
+                {
+                  $sort: { timestamp: -1 },
+                },
+                {
+                  $limit: 1,
+                },
+                {
+                  $project: {
+                    _id: 0,
+                    metadata: 1,
+                    state: 1,
+                    payload: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $unwind: {
+              path: "$history",
+            },
+          },
+        ])
         .toArray()) as IPlanet[] | undefined;
 
       if (miners?.length === 0) {
         res.status(404).send({
           error: "No planets found",
+        });
+      } else {
+        res.send(
+          miners?.map((miner) => {
+            delete miner._id;
+            return miner;
+          })
+        );
+      }
+    } else if (req.query.name) {
+      const miners = (await collections.miners
+        ?.find({
+          name: req.query.name,
+        })
+        .toArray()) as IPlanet[] | undefined;
+
+      if (miners?.length === 0) {
+        res.status(404).send({
+          error: "No miners found",
         });
       } else {
         res.send(
@@ -73,12 +126,17 @@ router.get("/miners/:id", async (req, res) => {
 
 router.post("/miners", async (req, res) => {
   try {
+    // TODO: Investigatin on request cancelled issue
+    req.on("close", function () {
+      // code to handle connection abort
+      logger.debug("user cancelled");
+    });
+
     const planet = await collections.planets?.findOne({
       id: req.body.planetId,
     });
     const miner = await collections.miners?.findOne({}, { sort: { id: -1 } });
 
-    console.log(req.body);
     if (
       planet &&
       planet.minerals > 500 &&
@@ -97,8 +155,13 @@ router.post("/miners", async (req, res) => {
       };
 
       await collections.miners?.insertOne(doc);
+      await collections.planets?.updateOne(
+        { id: planet.id },
+        { $set: { minerals: planet.minerals - 500 } }
+      );
+      machine.runMachine(doc as IMiner);
       const { _id, ...minerWithoutId } = doc as any;
-      res.send(minerWithoutId);
+      res.status(200).send(minerWithoutId);
     } else {
       res.status(400).send({
         error: "Invalid request",
@@ -407,7 +470,7 @@ router.get("/asteroids", async (req, res) => {
         asteroids?.map(async (asteroid) => {
           delete asteroid._id;
           return {
-            miner: await client.hGet("asteroid-miner", asteroid.name),
+            miner: AsteroidMinerMap.get(asteroid.name),
             ...asteroid,
           };
         }) || []
@@ -437,7 +500,7 @@ router.get("/asteroids/:name", async (req, res) => {
 
       res.send({
         ...asteroidWithoutId,
-        miner: await client.hGet("asteroid-miner", asteroid.name),
+        miner: AsteroidMinerMap.get(asteroid.name),
       });
     } else {
       res.status(404).send({
