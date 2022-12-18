@@ -11,7 +11,7 @@ Each miner has a mineral carry capacity, a travel speed and a mining speed. Mine
 
 A planet can store minerals. Each planet can spawn new miner when it has enough resources. It takes 1000 minerals to spawn a new miner, and the minerals are removed from the planet.
 
-Each asteroid has a limited quantity of minerals, which decreases when it is mined by a miner, up to depletion. 
+Each asteroid has a limited quantity of minerals, which decreases when it is mined by a miner, up to depletion.
 An asteroid can be mined by only one miner at a time.
 
 The simulation is based on an event loop, 1 second in real life equals 1 year in the simulation.

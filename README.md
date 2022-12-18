@@ -77,16 +77,22 @@ interface MessageBody {
 }
 ```
 
-To achieve that I need a reflect mechanism to emit trigger from REST apis and running state machine. Rxjs seems like the right way to do the work. I will use the observable object to implement a minimal `pubsub` module to hooks the event actions, RESTApi actions and websocket.
-
 ## Progress
 
 - The events module is basically finished, needs more testing and debug.
 
-- The restful module is partially finished, I did the very basic response from the database, but will need to aggregate more data to meet the business needs.
+- The restful module has mostly finished, more aggregation has been added for the convenience on front-end queries.
 
-- The websocket module is heavily related to the pubsub module, which has not been insert into the event flow.
+- Now the HTTP APIs and WebSocket works okay without interruptions. There should be more work to be done like websocket keep-alive and more error handling and interruption recovery. But a fresh start will keep works fine.
 
-- The front-end has not been modified yet, I'll finish the tweaking of the RESTful APIs and websockets then start working on the frontend.
+- Rewrite some of the front-end project class component into function component.
 
-## [WIP]
+## Problems
+
+- Now if the server restarts, there's no proper recovery mechanism on both frontend and backend, websocket and state machines are not going to be recovered perfectly.
+
+- The state machine will hangs some while after running for sometimes. Not certain if it is the minerals has been drained on all asteroids, the reason is still yet to be found.
+
+- Some behaviors, like delete or add miners/asteroids/planets will not have effects on websockets and state machine, and thus no add/remove websocket event. So far I only implemented the "UPDATE" events. But the design is reserved for the implementation, the state machines are stored in a map, it is easy to locate and execute/suspend.
+
+- Removed spinners from some of the front-end components because I think it is better to put the spinners in the inner components. That's where the data loads. But I haven't implement the spinners yet.
