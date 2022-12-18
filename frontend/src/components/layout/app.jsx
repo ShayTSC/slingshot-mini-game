@@ -11,12 +11,13 @@ import {
   Switch,
   Route
 } from 'react-router-dom'
+import { webSocket } from 'rxjs/webSocket'
 
 function App() {
 	return (
 		<Router>
 			<main>
-				<Header />			
+				<Header />
 				<Nav />
 
 				<Switch>
@@ -35,5 +36,7 @@ function App() {
 		</Router>
 	);
 }
+
+export const subject = webSocket('ws://127.0.0.1:8081')
 
 export default App

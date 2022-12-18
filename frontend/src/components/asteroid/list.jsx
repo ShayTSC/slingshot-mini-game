@@ -2,23 +2,74 @@
  * List of asteroids
  */
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState, useReducer } from "react";
 import { apis } from "../../apis";
+import { subject } from "../layout/app";
 
 function AsteroidList() {
-  const [asteroids, setAsteroids] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const [asteroids, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case "update":
+        const index = state.findIndex(
+          (asteroid) => asteroid.name === action.asteroid.name
+        );
+        if (index !== -1) {
+          console.debug("Asteroid updated", action.asteroid);
+          const newAsteroids = [...state];
+          newAsteroids[index] = Object.assign(
+            {},
+            newAsteroids[index],
+            action.asteroid
+          );
+          return newAsteroids;
+        }
+        return state;
+      default:
+        return action.asteroid;
+    }
+  }, []);
 
   useEffect(() => {
     apis
       .fetchAsteroids()
       .then((response) => {
-        setAsteroids(response.data);
+        dispatch({
+          asteroid: response.data,
+        });
+        setLoaded(true);
       })
       .catch((error) => {
         console.error(error);
       });
   }, []);
+
+  useEffect(() => {
+    const sub = subject.subscribe({
+      next: (data) => {
+        if (data.asteroid && data.action === "update") {
+          const index = asteroids.findIndex(
+            (asteroid) => asteroid.name === data.asteroid.name
+          );
+          if (index !== -1) {
+            console.debug("Asteroid updated", data.asteroid);
+            const merged = Object.assign({}, asteroids[index], data.asteroid);
+            dispatch({
+              type: "update",
+              asteroid: merged,
+            });
+          }
+        }
+      },
+      error: (err) => console.error(err),
+    });
+
+    return () => {
+      sub.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   return (
     <div className="list">
@@ -34,10 +85,10 @@ function AsteroidList() {
 
         <tbody>
           {asteroids.map((asteroid) => (
-            <tr>
+            <tr key={asteroid.name}>
               <td>{asteroid.name}</td>
               <td>
-                {asteroid.mined}/{asteroid.minerals}
+                {asteroid.minerals - asteroid.mined}/{asteroid.minerals}
               </td>
               <td>{asteroid.miner ? `Miner ${asteroid.miner}` : "-"}</td>
               <td>

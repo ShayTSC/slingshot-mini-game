@@ -8,6 +8,7 @@ import PopupContent from "./popup.jsx";
 import CreateMinerForm from "./createMiner.jsx";
 import Loader from "../layout/loader.jsx";
 import { apis } from "../../apis/index.js";
+import { subject } from "../layout/app.jsx";
 
 function PlanetList() {
   const [state, setState] = useState({
@@ -17,6 +18,7 @@ function PlanetList() {
   });
   const [planets, setPlanets] = useState([]);
   const [selectedPlanetId, setSelectedPlanetId] = useState(0);
+  const [loaded, setLoaded] = useState(false);
 
   // Show planet popup
   const showPopup = function (id) {
@@ -58,6 +60,32 @@ function PlanetList() {
       setPlanets(planets.data);
     });
   }, []);
+
+  useEffect(() => {
+    const sub = subject.subscribe({
+      next: (data) => {
+        if (data.planet && data.action === "update") {
+          const index = planets.data.findIndex(
+            (planet) => Number(planet.id) === Number(data.planet.id)
+          );
+          if (index !== -1) {
+            const newPlanets = [...planets.data];
+            newPlanets[index] = Object.assign(
+              {},
+              newPlanets[index],
+              data.planet
+            );
+            setPlanets(newPlanets);
+          }
+        }
+      },
+    });
+
+    return () => {
+      sub.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   return (
     <div className="list">

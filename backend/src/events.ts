@@ -53,8 +53,8 @@ export default class EventLoop {
       // And minerals amount, but for now we just use distance
       const asteroids = await collections.asteroids
         ?.find({
-          minerals: {
-            $gt: 0,
+          $expr: {
+            $gt: ["$minerals", "$mined"],
           },
         })
         .toArray();
@@ -151,9 +151,9 @@ export default class EventLoop {
 
       if (asteroid) {
         const currentPayload =
-          asteroid?.minerals >= miner.carryCapacity
+          asteroid?.minerals - asteroid?.mined >= miner.carryCapacity
             ? miner.carryCapacity
-            : asteroid?.minerals;
+            : asteroid?.minerals - asteroid?.mined;
 
         if (currentPayload === 0) {
           await collections.history?.insertOne({
@@ -179,6 +179,7 @@ export default class EventLoop {
               payload: 0,
               position: asteroid.position,
               status: 2,
+              miner: 0,
             },
           });
         } else {
@@ -257,7 +258,8 @@ export default class EventLoop {
             action: Actions.UPDATE,
             asteroid: {
               ...asteroid,
-              miner: miner.id,
+              mined: asteroid.mined + currentPayload,
+              miner: 0,
             },
           });
         }
@@ -308,6 +310,14 @@ export default class EventLoop {
             status: 3,
           },
         });
+        subject.next({
+          action: Actions.UPDATE,
+          planet: {
+            ...planet,
+            minerals: planet.minerals + history[0].payload,
+          },
+        });
+
         await collections.history?.insertOne({
           minerId: miner.id,
           state: 3,
