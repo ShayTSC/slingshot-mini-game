@@ -2,7 +2,7 @@
  * List of planets
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useReducer } from "react";
 import Rodal from "rodal";
 import PopupContent from "./popup.jsx";
 import CreateMinerForm from "./createMiner.jsx";
@@ -16,9 +16,29 @@ function PlanetList() {
     formVisible: false,
     loading: false,
   });
-  const [planets, setPlanets] = useState([]);
+  // const [planets, setPlanets] = useState([]);
   const [selectedPlanetId, setSelectedPlanetId] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+  const [planets, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case "update":
+        const index = state.findIndex(
+          (planet) => planet.name === action.planet.name
+        );
+        if (index !== -1) {
+          console.debug("Planet updated", action.planet);
+          const newPlanets = [...state];
+          newPlanets[index] = Object.assign(
+            {},
+            newPlanets[index],
+            action.planet
+          );
+          return newPlanets;
+        }
+        return state;
+      default:
+        return action.planet;
+    }
+  }, []);
 
   // Show planet popup
   const showPopup = function (id) {
@@ -57,7 +77,9 @@ function PlanetList() {
 
   useEffect(() => {
     apis.fetchPlanet().then((planets) => {
-      setPlanets(planets.data);
+      dispatch({
+        planets: planets.data,
+      });
     });
   }, []);
 
@@ -75,7 +97,10 @@ function PlanetList() {
               newPlanets[index],
               data.planet
             );
-            setPlanets(newPlanets);
+            dispatch({
+              type: "update",
+              planets: newPlanets,
+            });
           }
         }
       },
@@ -85,7 +110,7 @@ function PlanetList() {
       sub.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded]);
+  }, []);
 
   return (
     <div className="list">
