@@ -1,7 +1,8 @@
 import BigNumber from "bignumber.js";
-import { createMachine, interpret, StateMachine } from "xstate";
+import { createMachine, interpret } from "xstate";
 import { collections, logger } from "./main";
 import { IMiner } from "./models/miners";
+import { Actions, subject } from "./pubsub";
 import { sleep } from "./utils";
 
 const MinerStateMap = ["Idle", "Traveling", "Mining", "Transferring"];
@@ -113,6 +114,16 @@ export default class EventLoop {
           timespan: Number(timespan.toFixed(0)),
           status: `Miner is traveling to asteroid ${asteroids[index].name}`,
         });
+
+        subject.next({
+          action: Actions.UPDATE,
+          miner: {
+            ...miner,
+            position: planet.position,
+            status: 1,
+          },
+        });
+
         await sleep(Number(timespan));
       }
     } catch (error) {
@@ -160,6 +171,16 @@ export default class EventLoop {
             timespan: 0,
             status: `Miner is mining asteroid ${asteroid.name}`,
           });
+
+          subject.next({
+            action: Actions.UPDATE,
+            miner: {
+              ...miner,
+              payload: 0,
+              position: asteroid.position,
+              status: 2,
+            },
+          });
         } else {
           // Remove the resource from the asteroid to avoid competition, and update the asteroid
           await collections.asteroids?.updateOne(
@@ -185,6 +206,23 @@ export default class EventLoop {
               .div(1000)
               .toFixed(0)} years`
           );
+
+          subject.next({
+            action: Actions.UPDATE,
+            miner: {
+              ...miner,
+              payload: currentPayload,
+              position: asteroid.position,
+              status: 2,
+            },
+          });
+          subject.next({
+            action: Actions.UPDATE,
+            asteroid: {
+              ...asteroid,
+              miner: miner.id,
+            },
+          });
 
           // Insert the history and remove the miner off the asteroid
           collections.history?.insertOne({
@@ -213,6 +251,15 @@ export default class EventLoop {
             }
           );
           await sleep(timespan.toNumber());
+
+          // Update the history and remove the miner off the asteroid
+          subject.next({
+            action: Actions.UPDATE,
+            asteroid: {
+              ...asteroid,
+              miner: miner.id,
+            },
+          });
         }
         // Remove bi-directional mapping
         logger.debug(`Remove miner ${miner.id} off asteroid ${asteroid.name}`);
@@ -252,6 +299,15 @@ export default class EventLoop {
           )
           .sqrt()
           .dividedBy(new BigNumber(miner.travelSpeed).div(1000));
+
+        subject.next({
+          action: Actions.UPDATE,
+          miner: {
+            ...miner,
+            position: planet.position,
+            status: 3,
+          },
+        });
         await collections.history?.insertOne({
           minerId: miner.id,
           state: 3,

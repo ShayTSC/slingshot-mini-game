@@ -11,14 +11,15 @@ enum Actions {
 
 interface MessageBody {
 	action: Actions;
-	asteroid?: IAsteroid;
-	miner?: IMiner;
-	planet?: IPlanet;
+	asteroid?: IAsteroid | any; // TODO: Extend interface in the future
+	miner?: IMiner | any;
+	planet?: IPlanet | any;
 }
 
 const subject = new Subject<MessageBody>();
 
 export {
-	subject,
 	MessageBody,
+	Actions,
+	subject,
 }

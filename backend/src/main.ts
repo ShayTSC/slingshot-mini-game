@@ -1,13 +1,14 @@
+import bodyParser from "body-parser";
+import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import bodyParser from "body-parser";
-import router from "./apis";
+import mongoSanitize from "express-mongo-sanitize";
 import * as mongodb from "mongodb";
 import winston from "winston";
-import mongoSanitize from "express-mongo-sanitize";
+import { Server } from 'ws';
+import router from "./apis";
 import EventLoop from "./events";
-import cors from "cors";
-import { createClient } from "redis";
+import ws from "./websocket";
 
 // Load environment variables from .env file, where API keys and passwords are configured
 dotenv.config();
@@ -28,6 +29,10 @@ const logger = winston.createLogger({
 const port = process.env.PORT;
 const app = express();
 const machine = new EventLoop();
+const wss = new Server({
+  host: process.env.WS_HOST,
+  port: Number(process.env.WS_PORT || 8081),
+});
 
 app.listen(port, () => {
   logger.info(`⚡️[server]: Server is running at http://localhost:${port}`);
@@ -80,4 +85,6 @@ async function connectToDatabase() {
 
 connectToDatabase().then((r) => logger.silly("connect to database complete"));
 
-export { app, collections, logger, machine };
+ws();
+
+export { app, collections, logger, machine, wss };

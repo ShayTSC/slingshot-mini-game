@@ -1,26 +1,31 @@
-import { Server } from "ws";
+import { logger, wss } from "./main";
 import { MessageBody, subject } from "./pubsub";
+import WebSocket from "ws";
 
-const wss = new Server({ host: "localhost", port: 8081 });
+export default function ws() {
+  subject.subscribe({
+    next: (msg: MessageBody) => {
+      logger.silly(`Sending message to client: ${JSON.stringify(msg)}`);
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(msg));
+        }
+      });
+    },
+  });
 
-wss.on("connection", (ws) => {
-  console.log("Client connected");
+  wss.on("connection", (ws) => {
+    logger.info("Client connected");
 
-  subject.subscribe((msg: MessageBody) => {
-    wss.clients.forEach((client) => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(msg));
+    ws.on("message", (message) => {
+      logger.info(`Received message => ${message}`);
+      if (message.toString() == "ping") {
+        ws.send("pong");
       }
     });
-  });
 
-  ws.on("message", (message) => {
-    if (message.toString() == "ping") {
-      ws.send("pong");
-    }
+    ws.on("close", () => {
+      console.log("Client disconnected");
+    });
   });
-
-  ws.on("close", () => {
-    console.log("Client disconnected");
-  });
-});
+}
