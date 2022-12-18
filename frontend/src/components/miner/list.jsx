@@ -2,10 +2,11 @@
  * List of miners
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useReducer } from "react";
 import Rodal from "rodal";
 import PopupContent from "./popup.jsx";
 import { apis } from "../../apis/index.js";
+import { subject } from "../layout/app.jsx";
 
 export default function MinerList() {
   const [state, setState] = useState({
@@ -13,7 +14,24 @@ export default function MinerList() {
     loading: true,
   });
   const [selectedMiner, setSelectedMiner] = useState(0);
-  const [miners, setMiners] = useState([]);
+  // const [miners, setMiners] = useState([]);
+  const [miners, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case "update":
+        const index = state.findIndex(
+          (miner) => miner.id === action.miner.id
+        );
+        if (index !== -1) {
+          console.debug("Miner updated", action.miner);
+          const newMiners = [...state];
+          newMiners[index] = Object.assign({}, newMiners[index], action.miner);
+          return newMiners;
+        }
+        return state;
+      default:
+        return action.miners;
+    }
+  }, []);
 
   const openPopup = function () {
     setState({
@@ -32,9 +50,39 @@ export default function MinerList() {
 
   useEffect(() => {
     apis.fetchMiners().then((miners) => {
-      setMiners(miners.data);
+      dispatch({
+        miners: miners.data,
+      });
+      setState({
+        ...state,
+        loading: false,
+      });
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const sub = subject.subscribe({
+      next: (data) => {
+        if (data.miner && data.action === "update") {
+          const index = miners.findIndex((miner) => miner.id === data.miner.id);
+          if (index !== -1) {
+            console.debug("Miner updated", data.miner);
+            const merged = Object.assign({}, miners[index], data.miner);
+            dispatch({
+              type: "update",
+              miner: merged,
+            });
+          }
+        }
+      },
+    });
+
+    return () => {
+      sub.unsubscribe();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <div className="list">

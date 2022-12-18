@@ -36,7 +36,7 @@ function PlanetList() {
         }
         return state;
       default:
-        return action.planet;
+        return action.planets;
     }
   }, []);
 
