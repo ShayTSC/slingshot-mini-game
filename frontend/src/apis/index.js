@@ -6,6 +6,7 @@ const instance = axios.create({
 
 export const apis = {
   fetchPlanet: () => instance.get(`/planets`),
+  fetchMiners: () => instance.get(`/miners`),
   fetchMinerByName: (name) =>
     instance.get(`/miners`, {
       params: {
@@ -24,5 +25,6 @@ export const apis = {
       },
     });
   },
+  fetchHistoryByMinerId: (id) => instance.get(`/history/${id}`),
   createMiner: (props) => instance.post(`/miners`, props),
 };

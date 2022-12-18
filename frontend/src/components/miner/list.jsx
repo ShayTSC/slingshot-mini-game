@@ -2,158 +2,104 @@
  * List of miners
  */
 
-import React from 'react'
-import Rodal from 'rodal'
-import PopupContent from './popup.jsx'
-import Loader from '../layout/loader.jsx'
+import React, { useEffect, useState } from "react";
+import Rodal from "rodal";
+import PopupContent from "./popup.jsx";
+import { apis } from "../../apis/index.js";
 
-class MinerList extends React.Component {
-	constructor(props) {
-		super(props)
-		this.state = {
-			popupVisible: false,
-			loading: true
-		}
-	}
+export default function MinerList() {
+  const [state, setState] = useState({
+    popupVisible: false,
+    loading: true,
+  });
+  const [selectedMiner, setSelectedMiner] = useState(0);
+  const [miners, setMiners] = useState([]);
 
-	openPopup() {
-		// If there is a timeout in progress, cancel it
-		if(this.state.loaderTimeout)
-			clearTimeout(this.state.loaderTimeout)
+  const openPopup = function () {
+    setState({
+      ...state,
+      popupVisible: true,
+      loading: true,
+    });
+  };
 
-		this.setState({
-			popupVisible: true,
-			loading: true,
-			loaderTimeout: setTimeout(() => {
-				this.setState({
-					loading: false
-				})
-			}, 2000)
-		})
-	}
+  const hidePopup = function () {
+    setState({
+      ...state,
+      popupVisible: false,
+    });
+  };
 
-	hidePopup() {
-		this.setState({
-			popupVisible: false
-		})
-	}
+  useEffect(() => {
+    apis.fetchMiners().then((miners) => {
+      setMiners(miners.data);
+    });
+  }, []);
 
-	render() {
-		return <div className="list">
-			<table>
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Planet</th>
-						<th>Carry capacity</th>
-						<th>Travel speed</th>
-						<th>Mining speed</th>
-						<th>Position (x, y)</th>
-						<th>Status</th>
-					</tr>
-				</thead>
+  return (
+    <div className="list">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Planet</th>
+            <th>Carry capacity</th>
+            <th>Travel speed</th>
+            <th>Mining speed</th>
+            <th>Position (x, y)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
 
-				<tbody>
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 1</td>
-						<td>Planet 1</td>
-						<td>113/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>832, 635</td>
-						<td>Mining</td>
-					</tr>
+        <tbody>
+          {miners?.map((miner) => {
+            return (
+              <tr
+                key={miner.id}
+                onClick={() => {
+                  setSelectedMiner(miner.id);
+                  openPopup();
+                }}
+              >
+                <td>{miner.name}</td>
+                <td>{miner.planetId}</td>
+                <td
+                  className={
+                    Number(miner.history.payload) ===
+                    Number(miner.history.carryCapacity)
+                      ? "green"
+                      : ""
+                  }
+                >
+                  {miner.history.payload}/{miner.carryCapacity}
+                </td>
+                <td>{miner.travelSpeed}</td>
+                <td>{miner.miningSpeed}</td>
+                <td>
+                  {miner.history.metadata.position.x || 0},{" "}
+                  {miner.history.metadata.position.y || 0}
+                </td>
+                <td>
+                  {miner.history.state === 0 && <span>Idle</span>}
+                  {miner.history.state === 1 && <span>Traveling</span>}
+                  {miner.history.state === 2 && <span>Mining</span>}
+                  {miner.history.state === 3 && <span>Transferring</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 2</td>
-						<td>Planet 2</td>
-						<td className="green">120/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>832, 635</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 3</td>
-						<td>Planet 3</td>
-						<td>113/120</td>
-						<td>50</td>
-						<td>20</td>
-						<td>165, 820</td>
-						<td>Transfering</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 4</td>
-						<td>Planet 1</td>
-						<td>0/70</td>
-						<td>60</td>
-						<td>40</td>
-						<td>999, 111</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 5</td>
-						<td>Planet 2</td>
-						<td>113/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>615, 132</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 6</td>
-						<td>Planet 3</td>
-						<td>113/120</td>
-						<td>70</td>
-						<td>40</td>
-						<td>248, 265</td>
-						<td>Transfering</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 7</td>
-						<td>Planet 1</td>
-						<td>113/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>832, 635</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 8</td>
-						<td>Planet 2</td>
-						<td>113/120</td>
-						<td>40</td>
-						<td>50</td>
-						<td>654, 456</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr onClick={this.openPopup.bind(this)}>
-						<td>Miner 9</td>
-						<td>Planet 3</td>
-						<td>113/120</td>
-						<td>70</td>
-						<td>30</td>
-						<td>379, 973</td>
-						<td>Traveling</td>
-					</tr>
-				</tbody>
-			</table>
-
-			<Rodal visible={this.state.popupVisible} onClose={this.hidePopup.bind(this)} width="782" height="480">
-				<h2>History of Miner 1</h2>
-				{
-					this.state.loading ? <Loader /> : <PopupContent />
-				}
-			</Rodal>
-		</div>
-	}
+      <Rodal
+        visible={state.popupVisible}
+        onClose={() => hidePopup()}
+        width="782"
+        height="480"
+      >
+        <h2>History of Miner {selectedMiner}</h2>
+        <PopupContent minerId={selectedMiner} />
+      </Rodal>
+    </div>
+  );
 }
-
-export default MinerList

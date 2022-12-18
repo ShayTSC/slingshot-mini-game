@@ -61,14 +61,14 @@ There is no final goal to reach. The goal is that the simulation works.
 	- `0` (`int`): Idle
 	- `1` (`int`): Traveling
 	- `2` (`int`): Mining
-	- `3` (`int`): Transfering minerals to planet
+	- `3` (`int`): transferring minerals to planet
 - Each time a miner does an action, its action should be recorded in database, in a `history` table
 - Miner actions / history are:
     - Miner spawn on planet `[planet name]`
 	- Traveling from planet `[planet name]` to asteroid `[asteroid name]`
 	- Mining asteroid `[asteroid name]` for `[number of years]` years
 	- Traveling back from asteroid `[asteroid name]` to `[planet name]`
-	- Transfering minerals to planet `[planet name]`
+	- transferring minerals to planet `[planet name]`
 	- ... and others if you think they make sense
 
 

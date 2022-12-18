@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { createMachine, interpret } from "xstate";
+import { createMachine, interpret, StateMachine } from "xstate";
 import { collections, logger } from "./main";
 import { IMiner } from "./models/miners";
 import { sleep } from "./utils";
@@ -11,11 +11,34 @@ export const MinerAsteroidMap = new Map<number, string>();
 
 export default class EventLoop {
   miners: IMiner[];
-  machines: any[];
+  machines: Map<number, any>;
 
   constructor() {
     this.miners = [];
-    this.machines = [];
+    this.machines = new Map<number, any>();
+  }
+
+  async idle(miner: IMiner) {
+    try {
+      const planet = await collections?.planets?.findOne({
+        id: miner.planetId,
+      });
+      await collections?.history?.insertOne({
+        minerId: miner.id,
+        state: 0,
+        metadata: {
+          position: planet?.position,
+        },
+        carryCapacity: miner.carryCapacity,
+        travelSpeed: miner.travelSpeed,
+        miningSpeed: miner.miningSpeed,
+        payload: 0,
+        timestamp: Date.now(),
+        status: "Miner has come back to home planet",
+      });
+    } catch (error) {
+      logger.error(error);
+    }
   }
 
   async travel(miner: IMiner) {
@@ -82,9 +105,13 @@ export default class EventLoop {
             targetPosition: asteroids[index].position,
             name: asteroids[index].name,
           },
+          carryCapacity: miner.carryCapacity,
+          travelSpeed: miner.travelSpeed,
+          miningSpeed: miner.miningSpeed,
           payload: 0,
           timestamp: Date.now(),
-          timespan: timespan.toFixed(0),
+          timespan: Number(timespan.toFixed(0)),
+          status: `Miner is traveling to asteroid ${asteroids[index].name}`,
         });
         await sleep(Number(timespan));
       }
@@ -125,9 +152,13 @@ export default class EventLoop {
               name: asteroid?.name,
               position: asteroid?.position,
             },
+            carryCapacity: miner.carryCapacity,
+            travelSpeed: miner.travelSpeed,
+            miningSpeed: miner.miningSpeed,
             payload: 0,
             timestamp: Date.now(),
             timespan: 0,
+            status: `Miner is mining asteroid ${asteroid.name}`,
           });
         } else {
           // Remove the resource from the asteroid to avoid competition, and update the asteroid
@@ -163,9 +194,13 @@ export default class EventLoop {
               name: asteroid?.name,
               position: asteroid?.position,
             },
+            carryCapacity: miner.carryCapacity,
+            travelSpeed: miner.travelSpeed,
+            miningSpeed: miner.miningSpeed,
             payload: currentPayload,
             timestamp: Date.now(),
-            timespan: timespan.toFixed(0),
+            timespan: Number(timespan.toFixed(0)),
+            status: `Miner is mining asteroid ${asteroid.name}`,
           });
           collections.asteroids?.updateOne(
             {
@@ -225,9 +260,13 @@ export default class EventLoop {
             position: history[0].metadata.position,
             targetPosition: planet.position,
           },
+          carryCapacity: miner.carryCapacity,
+          travelSpeed: miner.travelSpeed,
+          miningSpeed: miner.miningSpeed,
           payload: history[0]?.payload,
           timestamp: Date.now(),
-          timespan: timespan.toFixed(0),
+          timespan: Number(timespan.toFixed(0)),
+          status: `Miner is transferring ${history[0]?.payload} minerals to planet ${planet.name} at (${planet.position.x},${planet.position.y})`,
         });
         await collections.planets?.updateOne(
           {
@@ -246,7 +285,6 @@ export default class EventLoop {
             planet.position.y
           }) for ${timespan.div(1000).toFixed(0)} years`
         );
-
         await sleep(Number(timespan));
       }
     } catch (error) {
@@ -254,12 +292,12 @@ export default class EventLoop {
     }
   }
 
-  async runMachine(miner: IMiner, state?: string) {
+  async run(miner: IMiner, state?: number) {
     logger.info(`Run state machine for miner ${miner.id}`);
     const machine = createMachine({
       predictableActionArguments: true,
       id: miner.id.toString(),
-      initial: state || "Idle",
+      initial: state ? MinerStateMap[state] : "Idle",
       states: {
         Idle: {
           on: {
@@ -284,12 +322,15 @@ export default class EventLoop {
       },
     });
 
-    const service = interpret(machine).start();
+    this.machines.set(miner.id, machine);
+
+    const service = interpret(this.machines.get(miner.id)).start();
 
     service.subscribe((state) => {
       switch (state.value) {
         case "Idle":
           service.send("TRAVEL");
+
           break;
         case "Traveling":
           this.travel(miner).then(() => {
@@ -325,7 +366,7 @@ export default class EventLoop {
             .toArray()
             .then((history) => {
               const lastState = history ? history?.[0]?.state : undefined;
-              this.runMachine(miner, lastState);
+              this.run(miner, lastState);
             });
         });
       }

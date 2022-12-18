@@ -9,8 +9,42 @@ import { IMiner } from "./models/miners";
 
 const router = express.Router();
 
+const START_TIME = Date.now();
+
 // Miners
 router.get("/miners", async (req, res) => {
+  const lookupHistoryAndUnwind = [
+    {
+      $lookup: {
+        from: "histories",
+        localField: "id",
+        foreignField: "minerId",
+        as: "history",
+        pipeline: [
+          {
+            $sort: { timestamp: -1 },
+          },
+          {
+            $limit: 1,
+          },
+          {
+            $project: {
+              _id: 0,
+              metadata: 1,
+              state: 1,
+              payload: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: {
+        path: "$history",
+      },
+    },
+  ];
+
   try {
     if (req.query.planetId) {
       const planetIds = JSON.parse(req.query.planetId as string).filter(
@@ -21,35 +55,7 @@ router.get("/miners", async (req, res) => {
           {
             $match: { planetId: { $in: planetIds } },
           },
-          {
-            $lookup: {
-              from: "histories",
-              localField: "id",
-              foreignField: "minerId",
-              as: "history",
-              pipeline: [
-                {
-                  $sort: { timestamp: -1 },
-                },
-                {
-                  $limit: 1,
-                },
-                {
-                  $project: {
-                    _id: 0,
-                    metadata: 1,
-                    state: 1,
-                    payload: 1,
-                  },
-                },
-              ],
-            },
-          },
-          {
-            $unwind: {
-              path: "$history",
-            },
-          },
+          ...lookupHistoryAndUnwind,
         ])
         .toArray()) as IPlanet[] | undefined;
 
@@ -67,9 +73,12 @@ router.get("/miners", async (req, res) => {
       }
     } else if (req.query.name) {
       const miners = (await collections.miners
-        ?.find({
-          name: req.query.name,
-        })
+        ?.aggregate([
+          {
+            $match: { name: req.query.name },
+          },
+          ...lookupHistoryAndUnwind,
+        ])
         .toArray()) as IPlanet[] | undefined;
 
       if (miners?.length === 0) {
@@ -85,9 +94,9 @@ router.get("/miners", async (req, res) => {
         );
       }
     } else {
-      const miners = (await collections.miners?.find().toArray()) as
-        | IPlanet[]
-        | undefined;
+      const miners = (await collections.miners
+        ?.aggregate(lookupHistoryAndUnwind)
+        .toArray()) as IPlanet[] | undefined;
       res.send(
         miners?.map((miner) => {
           delete miner._id;
@@ -159,7 +168,7 @@ router.post("/miners", async (req, res) => {
         { id: planet.id },
         { $set: { minerals: planet.minerals - 500 } }
       );
-      machine.runMachine(doc as IMiner);
+      machine.run(doc as IMiner);
       const { _id, ...minerWithoutId } = doc as any;
       res.status(200).send(minerWithoutId);
     } else {
@@ -635,6 +644,58 @@ router.delete("/asteroids/:name", async (req, res) => {
     res.send({
       name: decodeURIComponent(req.params.name),
     });
+  } catch (error) {
+    res.status(500).send({
+      error: JSON.stringify(error),
+      message: "Something went wrong",
+    });
+  }
+});
+
+router.get("/history/:id", async (req, res) => {
+  try {
+    const data = await collections.history
+      ?.aggregate([
+        {
+          $match: {
+            minerId: Number(req.params.id),
+          },
+        },
+        {
+          $lookup: {
+            from: "miners",
+            localField: "minerId",
+            foreignField: "id",
+            as: "planet",
+          },
+        },
+        {
+          $set: {
+            planet: { $arrayElemAt: ["$planet.planetId", 0] },
+          },
+        },
+        {
+          $sort: {
+            timestamp: -1,
+          },
+        },
+        {
+          $limit: 20,
+        },
+        {
+          $project: {
+            _id: 0,
+          },
+        },
+      ])
+      .toArray();
+
+    res.send(
+      data?.map((item) => ({
+        ...item,
+        year: Math.round((item.timestamp - START_TIME) / 1000),
+      }))
+    );
   } catch (error) {
     res.status(500).send({
       error: JSON.stringify(error),
